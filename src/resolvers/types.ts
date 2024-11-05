@@ -42,6 +42,11 @@ export class SignInInput{
     password: string
 }
 
+@ArgsType()
+export class RefreshTokenInput{
+    @Field(() => String)
+    refreshToken: string;
+}
 
 
 

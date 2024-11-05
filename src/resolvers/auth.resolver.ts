@@ -1,10 +1,7 @@
 import {
   Args,
-  ArgsType,
   Ctx,
-  Field,
   Mutation,
-  ObjectType,
   Query,
   Resolver,
 } from "type-graphql";
@@ -12,7 +9,7 @@ import { getPrismaFromContext } from "../../prisma/generated/helpers";
 import { PrismaClient, UserRole } from "@prisma/client";
 import { hash, compare } from "bcrypt";
 import jwt from "jsonwebtoken";
-import { SignInInput, SignInOutput, SignUpOutput, SingUpInput } from "./types";
+import { SignInInput, SignInOutput, SignUpOutput, SingUpInput , RefreshTokenInput} from "./types";
 
 
 @Resolver()
@@ -31,14 +28,36 @@ class AuthResolver {
         role: UserRole.STUDENT,
       },
     });
-
     
+    return {
+        accessToken: this.generateAccessToken(data.email),
+        refreshToken: this.generateRefreshToken(data.email),
+    };
+}
+
+@Mutation(() => SignInOutput)
+async refreshTokens(@Ctx() ctx,@Args() data: RefreshTokenInput): Promise<SignInOutput> {
+    const secret = process.env.JWT_REFRESH_TOKEN;
+    if(!secret){
+        throw new Error("Not valid refresh token")
+    }
+
+    const res = JSON.parse(jwt.verify(data.refreshToken, process.env.JWT_REFRESH_TOKEN!) as string);
+    const prisma = getPrismaFromContext(ctx) as PrismaClient;
+    const  user = await prisma.user.findUniqueOrThrow({
+        where: {email: res.email}
+    })
+
+    if(!user){
+        throw new Error("User dont exists");
+    }
 
     return {
-      accessToken: this.generateAccessToken(data.email),
-      refreshToken: this.generateRefreshToken(data.email),
-    };
-  }
+        accessToken: this.generateAccessToken(user.email),
+        refreshToken: this.generateRefreshToken(user.email)
+    }
+
+}
 
   @Query(() => SignInOutput)
   async SignIn(@Ctx() ctx, @Args() data: SignInInput): Promise<SignInOutput> {
@@ -97,6 +116,8 @@ class AuthResolver {
   }
 
 }
+
+
 
 
 

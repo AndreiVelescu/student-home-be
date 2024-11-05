@@ -5,8 +5,7 @@ import 'reflect-metadata';
 import { disconnectDataLayer } from "../db";
 import { getGraphqlSchema } from "../prisma/graphQlSchema";
 import { startServer } from "./server";
-import { userInfo } from 'os';
-import { query } from 'express';
+
 
 
 async function main() {
