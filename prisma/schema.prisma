@@ -24,17 +24,22 @@ enum UserRole {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String   
-  role      UserRole @default(STUDENT)
-  FirstName String @default("Unknown")
-  lastName  String @default("Unknown")
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  Camera    Camera?    @relation(fields: [cameraId], references: [id])
-  cameraId  Int?
-  interests Interest[] @relation("UserInterests")
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String   
+  role        UserRole @default(STUDENT)
+  FirstName   String @default("Unknown")
+  lastName    String @default("Unknown")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  Camera      Camera?    @relation(fields: [cameraId], references: [id])
+  cameraId    Int?
+  interests   Interest[] @relation("UserInterests")
+  preferences RoommatePreference?
+  points      LoyaltyPoints?
+  ratings     ComfortRating[]
+  bookings    Booking[]
+  documents   Document[]
 }
 
 
@@ -62,7 +67,73 @@ model Camera {
   students User[]
   Camin    Camin? @relation(fields: [caminId], references: [id])
   caminId  Int?
+  ratings  ComfortRating[]
+  bookings Booking[]
 }
+
+model News{
+  id           Int @id @default(autoincrement())
+  title        String
+  description  String @db.Text
+  imageUrl     String
+  date         DateTime @default(now())
+}
+
+model RoommatePreference {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @unique
+  cleanliness Int     // Scor curățenie (1-10)
+  quietness   Int     // Scor liniște (1-10)
+  lifestyle   String? // Ex.: Nocturn, Matinal
+  User        User    @relation(fields: [userId], references: [id])
+}
+
+model LoyaltyPoints {
+  id      Int @id @default(autoincrement())
+  userId  Int @unique
+  points  Int @default(0)
+  User    User @relation(fields: [userId], references: [id])
+}
+
+
+model ComfortRating {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  cameraId    Int
+  cleanliness Int     // Curatenie (1-5)
+  noiseLevel  Int      // Nivel zgomot (1-5)
+  comfort     Int      // Confort general (1-5)
+  User        User     @relation(fields: [userId], references: [id])
+  Camera      Camera   @relation(fields: [cameraId], references: [id])
+}
+
+model Booking {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  cameraId   Int
+  startDate  DateTime
+  endDate    DateTime
+  User       User     @relation(fields: [userId], references: [id])
+  Camera     Camera   @relation(fields: [cameraId], references: [id])
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Document {
+  id Int @id @default(autoincrement())
+  tip String //Cerere, raport sau alta
+  studentId Int
+  status DocumentStatus
+  fileUrl String
+  dataDepunere DateTime
+  dataAprobarii DateTime?
+  User User @relation(fields: [studentId], references: [id])
+}
+
 
 
 

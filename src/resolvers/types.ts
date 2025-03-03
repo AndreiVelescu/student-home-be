@@ -13,7 +13,7 @@ export class SignUpOutput {
 
 
 @ArgsType()
-export class SingUpInput {
+export class SignUpInput {
     @Field(()=> String)
     email: string
     @Field(()=> String)
@@ -47,6 +47,9 @@ export class RefreshTokenInput{
     @Field(() => String)
     refreshToken: string;
 }
+
+
+
 
 
 
