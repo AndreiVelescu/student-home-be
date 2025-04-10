@@ -4,12 +4,17 @@ import http from "http";
 import { getPrisma } from "../db";
 import { verifyAccessToken } from "./service";
 import { AuthenticationError } from "apollo-server-errors";
+import { graphqlUploadExpress } from "graphql-upload-ts";
+import path from "path";
 
 let app;
 
 export async function startServer(schema: any): Promise<any> {
   const cors = require("cors");
   const app: any = express();
+  app.use("/uploads", express.static("public"));
+
+  app.use(graphqlUploadExpress({ maxFileSize: 10000000, maxFiles: 10 }));
 
   app.use(
     cors({
@@ -27,16 +32,20 @@ export async function startServer(schema: any): Promise<any> {
   const httpServer = http.createServer(app);
   const server = new ApolloServer({
     ...schema,
+    uploads: false,
     context: async ({ req }: any) => {
+      if (isOperationPublic(req.body.operationName)) {
+        return {
+          prisma: getPrisma(),
+          requestor: null,
+          clientUrl: req.get("Origin"),
+          session: req.session,
+        };
+      }
       const prisma = getPrisma();
       let requestor: any = null;
       try {
-        if (
-          req.body.operationName !== "SignIn" &&
-          req.body.operationName !== "SignUp"
-        ) {
-          requestor = await verifyAccessToken(req, prisma);
-        }
+        requestor = await verifyAccessToken(req, prisma);
       } catch (e) {
         throw new AuthenticationError("Token expired or is not valid.");
       }
@@ -48,6 +57,7 @@ export async function startServer(schema: any): Promise<any> {
       };
     },
   });
+
   await server.start();
   server.applyMiddleware({ app, path: "/graphql" });
   const port = process.env.PORT ?? 4000;
@@ -61,4 +71,17 @@ export async function startServer(schema: any): Promise<any> {
 module.exports = {
   startServer,
   app,
+};
+
+const isOperationPublic = (operationName: string) => {
+  return (
+    operationName === "SignIn" ||
+    operationName === "SignUp" ||
+    operationName === "RefreshToken" ||
+    operationName === "IntrospectionQuery" ||
+    operationName === "SingleUpload" || //temporary
+    operationName === "MultipleUpload" ||
+    operationName === "Camins" ||
+    operationName === "CreateOneCaminRequest" //temporary
+  );
 };
